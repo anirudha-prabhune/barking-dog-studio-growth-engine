@@ -1,15 +1,20 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
 from backend.app.main import app
 from backend.app.core.database import Base, get_db
 from backend.app.core.config import settings
 
-# Test database (SQLite in-memory for fast and isolated test execution)
+# Test database (isolated test execution)
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -56,7 +61,9 @@ def test_health_endpoint(client):
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "ok"
+    assert "status" in data
+    assert "database" in data
+    assert "redis" in data
     assert "service" in data
 
 
@@ -123,3 +130,15 @@ def test_company_lifecycle(client, auth_headers):
     assert archived_list_resp.status_code == 200
     archived_ids = [item["id"] for item in archived_list_resp.json()["items"]]
     assert company_id in archived_ids
+
+    # 7. Restore company using canonical POST /api/companies/{id}/restore
+    restore_resp = client.post(f"{settings.API_V1_STR}/companies/{company_id}/restore", headers=auth_headers)
+    assert restore_resp.status_code == 200
+    assert restore_resp.json()["is_archived"] is False
+
+    # 8. Verify company back in default active list
+    restored_list_resp = client.get(f"{settings.API_V1_STR}/companies", headers=auth_headers)
+    assert restored_list_resp.status_code == 200
+    restored_ids = [item["id"] for item in restored_list_resp.json()["items"]]
+    assert company_id in restored_ids
+

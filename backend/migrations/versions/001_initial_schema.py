@@ -15,6 +15,12 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # 0. Ensure pgvector extension exists for future vector searches if PostgreSQL is used
+    try:
+        op.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+    except Exception:
+        pass
+
     # 1. users table
     op.create_table(
         'users',

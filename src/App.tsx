@@ -27,7 +27,6 @@ export default function App() {
   const [archiveCompanyTarget, setArchiveCompanyTarget] = useState<Company | null>(null);
 
   // Operations State
-  const [isSeeding, setIsSeeding] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   // Key to force refresh of companies list or dashboard when data changes
   const [refreshTick, setRefreshTick] = useState<number>(0);
@@ -107,25 +106,6 @@ export default function App() {
     addToast('success', `Company ${action}`, `'${updated.name}' was successfully ${action.toLowerCase()}.`);
   };
 
-  const handleSeedDemoData = async () => {
-    setIsSeeding(true);
-    try {
-      const res = await api.seedDemoData(false);
-      setRefreshTick((t) => t + 1);
-      addToast(
-        'success',
-        'Database Seeded',
-        res.newly_inserted > 0
-          ? `Seeded ${res.newly_inserted} new demo company records.`
-          : 'Demo records already present in database.'
-      );
-    } catch (err: any) {
-      addToast('error', 'Seed Operation Failed', err.message);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
-
   // Auth loading state
   if (isAuthChecking) {
     return (
@@ -166,8 +146,6 @@ export default function App() {
         <Header
           currentView={currentView}
           onOpenAddCompany={() => setIsAddModalOpen(true)}
-          onSeedData={handleSeedDemoData}
-          isSeeding={isSeeding}
         />
 
         {/* Dynamic Body Content */}

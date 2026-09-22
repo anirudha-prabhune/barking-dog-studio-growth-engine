@@ -63,7 +63,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               Sign In to Internal Engine
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              Authorized access for Studio Barking Dog growth operatives
+              Authorized access for Studio Barking Dog team members
             </p>
           </div>
 

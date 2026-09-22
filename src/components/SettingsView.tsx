@@ -109,19 +109,19 @@ export const SettingsView: React.FC = () => {
 
           <div className="p-3.5 rounded-md bg-slate-50/70 border border-slate-200/70 space-y-1">
             <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block">
-              Target Architecture
+              Canonical Architecture
             </span>
             <span className="font-medium text-slate-900 block text-xs">
-              Docker Compose (PostgreSQL 16, Redis 7, Express / Next.js)
+              FastAPI (Python 3.11) + PostgreSQL 16 (pgvector) + Redis 7
             </span>
             <span className="text-slate-500 text-[11px] block">
-              Portable configuration matching docker-compose.yml specification
+              Docker Compose infrastructure with Alembic migrations
             </span>
           </div>
         </div>
 
-        {/* Database Status */}
-        <div className="pt-2">
+        {/* Database & Service Status */}
+        <div className="pt-2 space-y-3">
           <div className="p-4 rounded-md border border-slate-200 bg-slate-50/50 flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 rounded bg-emerald-50 text-emerald-600 border border-emerald-200">
@@ -130,20 +130,23 @@ export const SettingsView: React.FC = () => {
               <div>
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-semibold text-slate-800">
-                    Relational Storage Engine
+                    PostgreSQL Relational Storage
                   </span>
                   <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-100 text-emerald-800">
-                    CONNECTED
+                    {healthStatus?.database === 'ok' ? 'ONLINE' : (healthStatus?.database || 'CONNECTING')}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800">
+                    pgvector enabled
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
-                  data/growth_engine.db • Schema verified with users, companies, activities, agent_runs, evidence
+                  Schema verified: users, companies, activities, agent_runs, evidence
                 </p>
               </div>
             </div>
             <div className="text-right">
               <span className="text-[11px] font-mono text-slate-400">
-                Service: {healthStatus?.service || 'Barking Dog Engine API'}
+                Redis: {healthStatus?.redis || 'ready'}
               </span>
             </div>
           </div>

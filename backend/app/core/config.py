@@ -22,9 +22,11 @@ class Settings(BaseSettings):
     # Redis Cache & Future Job Queue
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     
-    # Default initial admin credentials
-    DEFAULT_ADMIN_EMAIL: str = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@barkingdog.studio")
-    DEFAULT_ADMIN_PASSWORD: str = os.getenv("DEFAULT_ADMIN_PASSWORD", "BarkingDog2026!")
+    # Initial team administrator credentials
+    ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", os.getenv("DEFAULT_ADMIN_EMAIL", "admin@barkingdog.studio"))
+    ADMIN_PASSWORD: Optional[str] = os.getenv("ADMIN_PASSWORD", os.getenv("DEFAULT_ADMIN_PASSWORD", "BarkingDog2026!"))
+    DEFAULT_ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", os.getenv("DEFAULT_ADMIN_EMAIL", "admin@barkingdog.studio"))
+    DEFAULT_ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", os.getenv("DEFAULT_ADMIN_PASSWORD", "BarkingDog2026!"))
 
     class Config:
         env_file = ".env"

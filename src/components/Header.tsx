@@ -1,19 +1,14 @@
 import React from 'react';
-import { Plus, Database, Sparkles, Building2 } from 'lucide-react';
-import { User } from '../types';
+import { Plus } from 'lucide-react';
 
 interface HeaderProps {
   currentView: string;
   onOpenAddCompany: () => void;
-  onSeedData: () => void;
-  isSeeding?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentView,
-  onOpenAddCompany,
-  onSeedData,
-  isSeeding
+  onOpenAddCompany
 }) => {
   const getTitle = () => {
     switch (currentView) {
@@ -42,18 +37,6 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center space-x-3">
-        {/* Quick action: Seed Demo Data */}
-        <button
-          id="button-seed-data"
-          onClick={onSeedData}
-          disabled={isSeeding}
-          className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-md transition-colors disabled:opacity-50"
-          title="Seed fictional test records to local database"
-        >
-          <Database className="w-3.5 h-3.5 text-slate-500" />
-          <span>{isSeeding ? 'Seeding...' : 'Seed Demo Data'}</span>
-        </button>
-
         {/* Quick action: Add Company */}
         <button
           id="header-button-add-company"

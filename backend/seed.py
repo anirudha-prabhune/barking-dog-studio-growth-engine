@@ -108,9 +108,17 @@ def seed_database():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
+    admin_email = os.getenv("ADMIN_EMAIL", settings.ADMIN_EMAIL)
+    admin_password = os.getenv("ADMIN_PASSWORD", settings.ADMIN_PASSWORD)
+
+    if not admin_password:
+        print("ERROR: ADMIN_PASSWORD environment variable is not set.")
+        print("Please copy .env.example to .env and configure ADMIN_EMAIL and ADMIN_PASSWORD before running seed.py.")
+        sys.exit(1)
+
     try:
-        # 1. Seed or ensure admin
-        admin = AuthService.ensure_initial_admin(db)
+        # 1. Seed or ensure admin team member
+        admin = AuthService.ensure_initial_admin(db, email=admin_email, password=admin_password)
         print(f"✓ Initial Administrator created/verified: {admin.email}")
 
         # 2. Seed fictional demo companies
@@ -126,7 +134,8 @@ def seed_database():
                 print(f"• Already exists: {comp_data['name']}")
 
         print(f"\nSeed complete. Added {created_count} demo companies.")
-        print(f"Default admin login: {settings.DEFAULT_ADMIN_EMAIL} / {settings.DEFAULT_ADMIN_PASSWORD}")
+        print(f"Administrator team member email: {admin.email}")
+        print("Password configured via ADMIN_PASSWORD environment variable.")
 
     except Exception as e:
         print(f"Error seeding database: {e}")

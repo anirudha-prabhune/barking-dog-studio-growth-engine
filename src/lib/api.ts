@@ -2,6 +2,13 @@ import { Company, PaginatedCompanies, DashboardStats, CompanyFormData, User } fr
 
 const TOKEN_KEY = 'bdge_auth_token';
 
+// Canonical FastAPI backend URL from environment
+const RAW_API_URL =
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  ((import.meta.env as Record<string, any>).NEXT_PUBLIC_API_URL as string | undefined) ||
+  '';
+const API_BASE = RAW_API_URL.replace(/\/$/, '');
+
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -25,7 +32,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(endpoint, {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+
+  const response = await fetch(url, {
     ...options,
     headers
   });
@@ -118,17 +127,13 @@ export const api = {
     });
   },
 
-  async unarchiveCompany(id: string): Promise<Company> {
-    return request<Company>(`/api/companies/${id}/unarchive`, {
+  async restoreCompany(id: string): Promise<Company> {
+    return request<Company>(`/api/companies/${id}/restore`, {
       method: 'POST'
     });
   },
 
-  // Development Seed
-  async seedDemoData(reset: boolean = false): Promise<{ message: string; newly_inserted: number }> {
-    return request<{ message: string; newly_inserted: number }>('/api/seed', {
-      method: 'POST',
-      body: JSON.stringify({ reset })
-    });
+  async unarchiveCompany(id: string): Promise<Company> {
+    return this.restoreCompany(id);
   }
 };

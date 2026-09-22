@@ -29,7 +29,7 @@ export const ArchiveConfirmDialog: React.FC<ArchiveConfirmDialogProps> = ({
     try {
       let res: Company;
       if (isArchived) {
-        res = await api.unarchiveCompany(company.id);
+        res = await api.restoreCompany(company.id);
       } else {
         res = await api.archiveCompany(company.id);
       }

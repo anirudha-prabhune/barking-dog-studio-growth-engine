@@ -23,18 +23,29 @@ class AuthService:
         return user
 
     @staticmethod
-    def ensure_initial_admin(db: Session) -> User:
-        admin = AuthService.get_by_email(db, settings.DEFAULT_ADMIN_EMAIL)
+    def ensure_initial_admin(db: Session, email: Optional[str] = None, password: Optional[str] = None) -> User:
+        admin_email = (email or settings.ADMIN_EMAIL or settings.DEFAULT_ADMIN_EMAIL).strip().lower()
+        admin_password = password or settings.ADMIN_PASSWORD or settings.DEFAULT_ADMIN_PASSWORD
+        if not admin_password:
+            raise ValueError(
+                "ADMIN_PASSWORD is required. Please set ADMIN_PASSWORD in your .env file."
+            )
+        admin = AuthService.get_by_email(db, admin_email)
         if not admin:
             admin = User(
-                email=settings.DEFAULT_ADMIN_EMAIL.lower(),
-                password_hash=get_password_hash(settings.DEFAULT_ADMIN_PASSWORD),
+                email=admin_email,
+                password_hash=get_password_hash(admin_password),
                 name="Studio Administrator",
                 is_active=True,
                 created_at=utc_now(),
                 updated_at=utc_now()
             )
             db.add(admin)
+            db.commit()
+            db.refresh(admin)
+        else:
+            admin.password_hash = get_password_hash(admin_password)
+            admin.updated_at = utc_now()
             db.commit()
             db.refresh(admin)
         return admin

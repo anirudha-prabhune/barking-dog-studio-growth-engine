@@ -102,8 +102,9 @@ def archive_company(
     return company
 
 
+@router.post("/{company_id}/restore", response_model=CompanyOut)
 @router.post("/{company_id}/unarchive", response_model=CompanyOut)
-def unarchive_company(
+def restore_company(
     company_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
