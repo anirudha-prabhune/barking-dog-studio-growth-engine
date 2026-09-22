@@ -1,0 +1,6 @@
+{
+  "name": "Barking Dog Growth Engine",
+  "description": "Internal AI-powered lead-generation intelligence platform for Studio Barking Dog.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

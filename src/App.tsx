@@ -1,0 +1,239 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Sidebar } from './components/Sidebar';
+import { Header } from './components/Header';
+import { DashboardView } from './components/DashboardView';
+import { CompaniesView } from './components/CompaniesView';
+import { CompanyDetailView } from './components/CompanyDetailView';
+import { SettingsView } from './components/SettingsView';
+import { LoginView } from './components/LoginView';
+import { AddCompanyModal } from './components/AddCompanyModal';
+import { EditCompanyModal } from './components/EditCompanyModal';
+import { ArchiveConfirmDialog } from './components/ArchiveConfirmDialog';
+import { NotificationToast, ToastMessage } from './components/NotificationToast';
+import { User, Company } from './types';
+import { api, getStoredToken } from './lib/api';
+
+export default function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
+
+  // Navigation State
+  const [currentView, setCurrentView] = useState<string>('dashboard');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+
+  // Modals & Dialogs
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [editCompanyTarget, setEditCompanyTarget] = useState<Company | null>(null);
+  const [archiveCompanyTarget, setArchiveCompanyTarget] = useState<Company | null>(null);
+
+  // Operations State
+  const [isSeeding, setIsSeeding] = useState<boolean>(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  // Key to force refresh of companies list or dashboard when data changes
+  const [refreshTick, setRefreshTick] = useState<number>(0);
+
+  const addToast = (type: 'success' | 'error' | 'info', title: string, description?: string) => {
+    const id = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    setToasts((prev) => [...prev, { id, type, title, description }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Check auth session on startup
+  useEffect(() => {
+    const checkSession = async () => {
+      const token = getStoredToken();
+      if (!token) {
+        setIsAuthChecking(false);
+        return;
+      }
+      try {
+        const user = await api.getCurrentUser();
+        setCurrentUser(user);
+      } catch {
+        api.logout();
+        setCurrentUser(null);
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkSession();
+  }, []);
+
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+    addToast('success', 'Session Authenticated', `Welcome back, ${user.name}`);
+  };
+
+  const handleLogout = () => {
+    api.logout();
+    setCurrentUser(null);
+    setCurrentView('dashboard');
+    setSelectedCompanyId(null);
+    addToast('info', 'Logged Out', 'You have been safely signed out of Studio Barking Dog.');
+  };
+
+  const handleNavigate = (view: string) => {
+    setCurrentView(view);
+    if (view !== 'company_detail') {
+      setSelectedCompanyId(null);
+    }
+  };
+
+  const handleOpenCompanyDetail = (id: string) => {
+    setSelectedCompanyId(id);
+    setCurrentView('company_detail');
+  };
+
+  const handleCompanyCreated = (newId: string) => {
+    setRefreshTick((t) => t + 1);
+    addToast('success', 'Company Created', 'New organization record successfully saved.');
+    handleOpenCompanyDetail(newId);
+  };
+
+  const handleCompanyUpdated = (updated: Company) => {
+    setRefreshTick((t) => t + 1);
+    addToast('success', 'Company Updated', `Changes to '${updated.name}' saved.`);
+  };
+
+  const handleCompanyArchiveChanged = (updated: Company) => {
+    setRefreshTick((t) => t + 1);
+    const action = updated.is_archived ? 'Archived' : 'Restored';
+    addToast('success', `Company ${action}`, `'${updated.name}' was successfully ${action.toLowerCase()}.`);
+  };
+
+  const handleSeedDemoData = async () => {
+    setIsSeeding(true);
+    try {
+      const res = await api.seedDemoData(false);
+      setRefreshTick((t) => t + 1);
+      addToast(
+        'success',
+        'Database Seeded',
+        res.newly_inserted > 0
+          ? `Seeded ${res.newly_inserted} new demo company records.`
+          : 'Demo records already present in database.'
+      );
+    } catch (err: any) {
+      addToast('error', 'Seed Operation Failed', err.message);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  // Auth loading state
+  if (isAuthChecking) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 space-y-3">
+        <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 font-bold flex items-center justify-center animate-pulse">
+          BD
+        </div>
+        <p className="text-xs font-mono tracking-wider uppercase text-slate-500">
+          Initializing Engine Foundation...
+        </p>
+      </div>
+    );
+  }
+
+  // Unauthenticated user -> Login Screen (Section 6)
+  if (!currentUser) {
+    return (
+      <>
+        <LoginView onLoginSuccess={handleLoginSuccess} />
+        <NotificationToast toasts={toasts} onDismiss={dismissToast} />
+      </>
+    );
+  }
+
+  return (
+    <div id="growth-engine-root" className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900 font-sans antialiased">
+      {/* Persistent Left Sidebar Navigation */}
+      <Sidebar
+        currentView={currentView}
+        onNavigate={handleNavigate}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+      />
+
+      {/* Main View Area */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Top Header */}
+        <Header
+          currentView={currentView}
+          onOpenAddCompany={() => setIsAddModalOpen(true)}
+          onSeedData={handleSeedDemoData}
+          isSeeding={isSeeding}
+        />
+
+        {/* Dynamic Body Content */}
+        <main className="flex-1 overflow-y-auto bg-slate-100/60 pb-16">
+          {currentView === 'dashboard' && (
+            <DashboardView
+              key={`dashboard-${refreshTick}`}
+              onNavigateToCompanies={() => handleNavigate('companies')}
+              onOpenCompanyDetail={handleOpenCompanyDetail}
+              onOpenAddCompany={() => setIsAddModalOpen(true)}
+            />
+          )}
+
+          {currentView === 'companies' && (
+            <CompaniesView
+              key={`companies-${refreshTick}`}
+              onOpenCompanyDetail={handleOpenCompanyDetail}
+              onOpenAddCompany={() => setIsAddModalOpen(true)}
+              onOpenEditCompany={(company) => setEditCompanyTarget(company)}
+              onOpenArchiveConfirm={(company) => setArchiveCompanyTarget(company)}
+            />
+          )}
+
+          {currentView === 'company_detail' && selectedCompanyId && (
+            <CompanyDetailView
+              key={`detail-${selectedCompanyId}-${refreshTick}`}
+              companyId={selectedCompanyId}
+              onBack={() => handleNavigate('companies')}
+              onOpenEdit={(company) => setEditCompanyTarget(company)}
+              onOpenArchiveConfirm={(company) => setArchiveCompanyTarget(company)}
+            />
+          )}
+
+          {currentView === 'settings' && <SettingsView />}
+        </main>
+      </div>
+
+      {/* Modals & Dialogs */}
+      <AddCompanyModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={handleCompanyCreated}
+      />
+
+      <EditCompanyModal
+        company={editCompanyTarget}
+        isOpen={Boolean(editCompanyTarget)}
+        onClose={() => setEditCompanyTarget(null)}
+        onSuccess={(updated) => {
+          handleCompanyUpdated(updated);
+          setEditCompanyTarget(null);
+        }}
+      />
+
+      <ArchiveConfirmDialog
+        company={archiveCompanyTarget}
+        isOpen={Boolean(archiveCompanyTarget)}
+        onClose={() => setArchiveCompanyTarget(null)}
+        onSuccess={(updated) => {
+          handleCompanyArchiveChanged(updated);
+          setArchiveCompanyTarget(null);
+        }}
+      />
+
+      {/* Notification Toast System */}
+      <NotificationToast toasts={toasts} onDismiss={dismissToast} />
+    </div>
+  );
+}
