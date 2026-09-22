@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { DashboardView } from './components/DashboardView';
@@ -13,13 +14,37 @@ import { NotificationToast, ToastMessage } from './components/NotificationToast'
 import { User, Company } from './types';
 import { api, getStoredToken } from './lib/api';
 
+function CompanyDetailWrapper({
+  refreshTick,
+  onBack,
+  onOpenEdit,
+  onOpenArchiveConfirm
+}: {
+  refreshTick: number;
+  onBack: () => void;
+  onOpenEdit: (company: Company) => void;
+  onOpenArchiveConfirm: (company: Company) => void;
+}) {
+  const { id } = useParams<{ id: string }>();
+  if (!id) {
+    return <Navigate to="/companies" replace />;
+  }
+  return (
+    <CompanyDetailView
+      key={`detail-${id}-${refreshTick}`}
+      companyId={id}
+      onBack={onBack}
+      onOpenEdit={onOpenEdit}
+      onOpenArchiveConfirm={onOpenArchiveConfirm}
+    />
+  );
+}
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
-
-  // Navigation State
-  const [currentView, setCurrentView] = useState<string>('dashboard');
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Modals & Dialogs
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -30,6 +55,14 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   // Key to force refresh of companies list or dashboard when data changes
   const [refreshTick, setRefreshTick] = useState<number>(0);
+
+  const getCurrentView = () => {
+    if (location.pathname.startsWith('/companies/')) return 'company_detail';
+    if (location.pathname.startsWith('/companies')) return 'companies';
+    if (location.pathname.startsWith('/settings')) return 'settings';
+    return 'dashboard';
+  };
+  const currentView = getCurrentView();
 
   const addToast = (type: 'success' | 'error' | 'info', title: string, description?: string) => {
     const id = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -72,27 +105,24 @@ export default function App() {
   const handleLogout = () => {
     api.logout();
     setCurrentUser(null);
-    setCurrentView('dashboard');
-    setSelectedCompanyId(null);
+    navigate('/dashboard');
     addToast('info', 'Logged Out', 'You have been safely signed out of Studio Barking Dog.');
   };
 
   const handleNavigate = (view: string) => {
-    setCurrentView(view);
-    if (view !== 'company_detail') {
-      setSelectedCompanyId(null);
-    }
+    if (view === 'dashboard') navigate('/dashboard');
+    else if (view === 'companies') navigate('/companies');
+    else if (view === 'settings') navigate('/settings');
   };
 
   const handleOpenCompanyDetail = (id: string) => {
-    setSelectedCompanyId(id);
-    setCurrentView('company_detail');
+    navigate(`/companies/${id}`);
   };
 
   const handleCompanyCreated = (newId: string) => {
     setRefreshTick((t) => t + 1);
     addToast('success', 'Company Created', 'New organization record successfully saved.');
-    handleOpenCompanyDetail(newId);
+    navigate(`/companies/${newId}`);
   };
 
   const handleCompanyUpdated = (updated: Company) => {
@@ -120,7 +150,7 @@ export default function App() {
     );
   }
 
-  // Unauthenticated user -> Login Screen (Section 6)
+  // Unauthenticated user -> Login Screen
   if (!currentUser) {
     return (
       <>
@@ -148,38 +178,47 @@ export default function App() {
           onOpenAddCompany={() => setIsAddModalOpen(true)}
         />
 
-        {/* Dynamic Body Content */}
+        {/* Dynamic Body Content routed with React Router */}
         <main className="flex-1 overflow-y-auto bg-slate-100/60 pb-16">
-          {currentView === 'dashboard' && (
-            <DashboardView
-              key={`dashboard-${refreshTick}`}
-              onNavigateToCompanies={() => handleNavigate('companies')}
-              onOpenCompanyDetail={handleOpenCompanyDetail}
-              onOpenAddCompany={() => setIsAddModalOpen(true)}
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route
+              path="/dashboard"
+              element={
+                <DashboardView
+                  key={`dashboard-${refreshTick}`}
+                  onNavigateToCompanies={() => navigate('/companies')}
+                  onOpenCompanyDetail={handleOpenCompanyDetail}
+                  onOpenAddCompany={() => setIsAddModalOpen(true)}
+                />
+              }
             />
-          )}
-
-          {currentView === 'companies' && (
-            <CompaniesView
-              key={`companies-${refreshTick}`}
-              onOpenCompanyDetail={handleOpenCompanyDetail}
-              onOpenAddCompany={() => setIsAddModalOpen(true)}
-              onOpenEditCompany={(company) => setEditCompanyTarget(company)}
-              onOpenArchiveConfirm={(company) => setArchiveCompanyTarget(company)}
+            <Route
+              path="/companies"
+              element={
+                <CompaniesView
+                  key={`companies-${refreshTick}`}
+                  onOpenCompanyDetail={handleOpenCompanyDetail}
+                  onOpenAddCompany={() => setIsAddModalOpen(true)}
+                  onOpenEditCompany={(company) => setEditCompanyTarget(company)}
+                  onOpenArchiveConfirm={(company) => setArchiveCompanyTarget(company)}
+                />
+              }
             />
-          )}
-
-          {currentView === 'company_detail' && selectedCompanyId && (
-            <CompanyDetailView
-              key={`detail-${selectedCompanyId}-${refreshTick}`}
-              companyId={selectedCompanyId}
-              onBack={() => handleNavigate('companies')}
-              onOpenEdit={(company) => setEditCompanyTarget(company)}
-              onOpenArchiveConfirm={(company) => setArchiveCompanyTarget(company)}
+            <Route
+              path="/companies/:id"
+              element={
+                <CompanyDetailWrapper
+                  refreshTick={refreshTick}
+                  onBack={() => navigate('/companies')}
+                  onOpenEdit={(company) => setEditCompanyTarget(company)}
+                  onOpenArchiveConfirm={(company) => setArchiveCompanyTarget(company)}
+                />
+              }
             />
-          )}
-
-          {currentView === 'settings' && <SettingsView />}
+            <Route path="/settings" element={<SettingsView />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </main>
       </div>
 

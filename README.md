@@ -19,14 +19,14 @@ The application uses a clean, single canonical architecture:
 ```
 Browser
   ↓
-React Frontend (Port 3000, Vite)
-  ↓ [NEXT_PUBLIC_API_URL=http://localhost:8000]
+React Frontend (Port 3000, Vite + React Router)
+  ↓ [VITE_API_URL=http://localhost:8000]
 FastAPI Backend (Port 8000, Python 3.11+)
   ↓
 PostgreSQL 16 (pgvector) + Redis 7
 ```
 
-- **Frontend**: React 19, TypeScript, Tailwind CSS, Lucide Icons, Motion.
+- **Frontend**: React 19, React Router 7, TypeScript, Tailwind CSS, Lucide Icons, Motion.
 - **Backend**: Python 3.11+, FastAPI, SQLAlchemy 2.0 ORM, Alembic migrations, Pydantic v2 schemas.
 - **Database & Cache**: PostgreSQL 16 (`pgvector/pgvector:pg16`), Redis 7 Alpine.
 
@@ -69,8 +69,11 @@ cp .env.example .env
 
 Configure your environment settings in `.env`:
 - `DATABASE_URL`: PostgreSQL connection string (defaults to `postgresql://postgres:postgres@localhost:5432/barking_dog_growth`)
+- `TEST_DATABASE_URL`: PostgreSQL test connection string (defaults to `postgresql://postgres:postgres@localhost:5432/barking_dog_test`)
 - `REDIS_URL`: Redis connection string (defaults to `redis://localhost:6379/0`)
-- `NEXT_PUBLIC_API_URL`: Backend API URL (defaults to `http://localhost:8000`)
+- `SECRET_KEY`: Secure secret key for signing JWT tokens (never use hardcoded defaults in production)
+- `VITE_API_URL`: Backend API URL (defaults to `http://localhost:8000`)
+- `CORS_ORIGINS`: Comma-separated allowed frontend origins (defaults to `http://localhost:3000,http://127.0.0.1:3000`)
 - `ADMIN_EMAIL`: Email for initial administrator team member
 - `ADMIN_PASSWORD`: Secure password for initial administrator team member (never commit plain-text credentials)
 
@@ -138,11 +141,13 @@ Log in using the administrator email and password configured in your `.env` file
 
 ## Testing
 
-Run the automated backend test suite (utilizing pytest and FastAPI TestClient):
+Run the automated backend test suite (utilizing pytest and PostgreSQL isolated test database):
 
 ```bash
 PYTHONPATH=. pytest backend/tests/ -v
 ```
+
+All tests execute against the dedicated PostgreSQL test database (`barking_dog_test`), validating authentication, company lifecycle, soft-delete archival/restore, audit logging, and idempotent admin credentials bootstrap without overwriting existing passwords.
 
 ---
 

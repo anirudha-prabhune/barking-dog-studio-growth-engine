@@ -24,14 +24,14 @@ class AuthService:
 
     @staticmethod
     def ensure_initial_admin(db: Session, email: Optional[str] = None, password: Optional[str] = None) -> User:
-        admin_email = (email or settings.ADMIN_EMAIL or settings.DEFAULT_ADMIN_EMAIL).strip().lower()
-        admin_password = password or settings.ADMIN_PASSWORD or settings.DEFAULT_ADMIN_PASSWORD
-        if not admin_password:
-            raise ValueError(
-                "ADMIN_PASSWORD is required. Please set ADMIN_PASSWORD in your .env file."
-            )
+        admin_email = (email or settings.ADMIN_EMAIL).strip().lower()
         admin = AuthService.get_by_email(db, admin_email)
         if not admin:
+            admin_password = password or settings.ADMIN_PASSWORD
+            if not admin_password:
+                raise ValueError(
+                    "ADMIN_PASSWORD is required to create the initial admin user. Please set ADMIN_PASSWORD in your .env file."
+                )
             admin = User(
                 email=admin_email,
                 password_hash=get_password_hash(admin_password),
@@ -43,9 +43,5 @@ class AuthService:
             db.add(admin)
             db.commit()
             db.refresh(admin)
-        else:
-            admin.password_hash = get_password_hash(admin_password)
-            admin.updated_at = utc_now()
-            db.commit()
-            db.refresh(admin)
+        # If admin already exists, retain their existing password without overwriting
         return admin

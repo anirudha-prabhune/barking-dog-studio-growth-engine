@@ -27,6 +27,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    if not settings.SECRET_KEY:
+        raise ValueError("SECRET_KEY environment variable is not configured. Please set SECRET_KEY in your .env file.")
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta

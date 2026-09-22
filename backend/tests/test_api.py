@@ -1,21 +1,28 @@
+import os
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
 from backend.app.main import app
 from backend.app.core.database import Base, get_db
 from backend.app.core.config import settings
+from backend.app.services.auth_service import AuthService
 
-# Test database (isolated test execution)
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool
+# PostgreSQL test database (Requirement 7: Move tests from SQLite -> PostgreSQL)
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/barking_dog_test")
 )
+
+engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+TEST_ADMIN_EMAIL = "admin@barkingdog.studio"
+TEST_ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "TestSecretPassword2026!")
+
+# Ensure SECRET_KEY is set in test environment if empty
+if not settings.SECRET_KEY:
+    settings.SECRET_KEY = "test-secret-key-studio-barking-dog-2026"
 
 
 def override_get_db():
@@ -32,13 +39,17 @@ app.dependency_overrides[get_db] = override_get_db
 @pytest.fixture(autouse=True)
 def setup_db():
     Base.metadata.create_all(bind=engine)
-    # Seed initial test admin
-    from backend.app.services.auth_service import AuthService
     db = TestingSessionLocal()
-    AuthService.ensure_initial_admin(db)
-    db.close()
+    try:
+        # Clear tables in reverse dependency order for isolated test execution
+        for table in reversed(Base.metadata.sorted_tables):
+            db.execute(table.delete())
+        db.commit()
+        # Seed test admin with configured test password
+        AuthService.ensure_initial_admin(db, email=TEST_ADMIN_EMAIL, password=TEST_ADMIN_PASSWORD)
+    finally:
+        db.close()
     yield
-    Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture
@@ -50,7 +61,7 @@ def client():
 def auth_headers(client):
     response = client.post(
         f"{settings.API_V1_STR}/auth/login",
-        json={"email": settings.DEFAULT_ADMIN_EMAIL, "password": settings.DEFAULT_ADMIN_PASSWORD}
+        json={"email": TEST_ADMIN_EMAIL, "password": TEST_ADMIN_PASSWORD}
     )
     assert response.status_code == 200
     token = response.json()["access_token"]
@@ -71,7 +82,7 @@ def test_authentication(client):
     # Valid credentials
     response = client.post(
         f"{settings.API_V1_STR}/auth/login",
-        json={"email": settings.DEFAULT_ADMIN_EMAIL, "password": settings.DEFAULT_ADMIN_PASSWORD}
+        json={"email": TEST_ADMIN_EMAIL, "password": TEST_ADMIN_PASSWORD}
     )
     assert response.status_code == 200
     assert "access_token" in response.json()
@@ -79,7 +90,7 @@ def test_authentication(client):
     # Invalid credentials
     bad_resp = client.post(
         f"{settings.API_V1_STR}/auth/login",
-        json={"email": settings.DEFAULT_ADMIN_EMAIL, "password": "WrongPassword123"}
+        json={"email": TEST_ADMIN_EMAIL, "password": "WrongPassword123"}
     )
     assert bad_resp.status_code == 401
 
@@ -141,4 +152,21 @@ def test_company_lifecycle(client, auth_headers):
     assert restored_list_resp.status_code == 200
     restored_ids = [item["id"] for item in restored_list_resp.json()["items"]]
     assert company_id in restored_ids
+
+
+def test_admin_bootstrap_does_not_overwrite_existing_password():
+    db = TestingSessionLocal()
+    try:
+        user = AuthService.get_by_email(db, TEST_ADMIN_EMAIL)
+        assert user is not None
+        original_hash = user.password_hash
+
+        # Re-running ensure_initial_admin must not overwrite existing password hash
+        updated_user = AuthService.ensure_initial_admin(
+            db, email=TEST_ADMIN_EMAIL, password="BrandNewDifferentPassword999!"
+        )
+        assert updated_user.password_hash == original_hash
+    finally:
+        db.close()
+
 

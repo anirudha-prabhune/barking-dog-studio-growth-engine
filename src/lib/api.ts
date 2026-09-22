@@ -2,12 +2,25 @@ import { Company, PaginatedCompanies, DashboardStats, CompanyFormData, User } fr
 
 const TOKEN_KEY = 'bdge_auth_token';
 
-// Canonical FastAPI backend URL from environment
-const RAW_API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ||
-  ((import.meta.env as Record<string, any>).NEXT_PUBLIC_API_URL as string | undefined) ||
-  '';
-const API_BASE = RAW_API_URL.replace(/\/$/, '');
+// Canonical FastAPI backend URL from environment (VITE_API_URL used exclusively)
+function getApiBase(): string {
+  const envUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
+  if (!envUrl) {
+    return '';
+  }
+  // In browser runtime, avoid fetching loopback addresses directly or triggering mixed content
+  if (typeof window !== 'undefined') {
+    if (envUrl.includes('localhost') || envUrl.includes('127.0.0.1')) {
+      return '';
+    }
+    if (window.location.protocol === 'https:' && envUrl.startsWith('http://')) {
+      return '';
+    }
+  }
+  return envUrl.replace(/\/$/, '');
+}
+
+const API_BASE = getApiBase();
 
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);

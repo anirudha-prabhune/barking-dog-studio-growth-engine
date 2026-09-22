@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, HttpUrl, field_validator
+from pydantic import BaseModel, HttpUrl, field_validator, ConfigDict
 from typing import Optional, List
 from backend.app.models.company import CompanyStatus, OpportunityLevel
 from backend.app.schemas.activity import ActivityOut
@@ -115,14 +115,13 @@ class CompanyUpdate(BaseModel):
 
 
 class CompanyOut(CompanyBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     is_archived: bool
     created_at: datetime
     updated_at: datetime
     activities: Optional[List[ActivityOut]] = []
-
-    class Config:
-        from_attributes = True
 
 
 class PaginatedCompanies(BaseModel):

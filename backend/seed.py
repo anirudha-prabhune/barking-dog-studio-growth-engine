@@ -9,7 +9,7 @@ import os
 # Append project root
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from backend.app.core.database import SessionLocal, engine, Base
+from backend.app.core.database import SessionLocal
 from backend.app.models.user import User
 from backend.app.models.company import Company, CompanyStatus, OpportunityLevel
 from backend.app.models.activity import Activity
@@ -104,8 +104,7 @@ DEMO_COMPANIES = [
 
 
 def seed_database():
-    print("Initializing database schema...")
-    Base.metadata.create_all(bind=engine)
+    print("Connecting to database (Alembic managed schema)...")
     db = SessionLocal()
 
     admin_email = os.getenv("ADMIN_EMAIL", settings.ADMIN_EMAIL)

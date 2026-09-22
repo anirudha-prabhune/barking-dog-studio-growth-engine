@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend.app.core.config import settings
-from backend.app.core.database import SessionLocal, engine, Base
+from backend.app.core.database import SessionLocal
 from backend.app.api import auth, companies, dashboard, health
 from backend.app.services.auth_service import AuthService
 from contextlib import asynccontextmanager
@@ -16,9 +16,8 @@ logger = logging.getLogger("barking_dog")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure database tables exist (fallback/development bootstrap before Alembic migration)
+    # Verify database connection and initial administrator (Alembic is the sole schema mechanism)
     try:
-        Base.metadata.create_all(bind=engine)
         db = SessionLocal()
         try:
             admin = AuthService.ensure_initial_admin(db)
@@ -26,7 +25,7 @@ async def lifespan(app: FastAPI):
         finally:
             db.close()
     except Exception as e:
-        logger.warning(f"Could not connect to PostgreSQL on startup (verify docker-compose): {e}")
+        logger.warning(f"Database startup check note: {e}")
     yield
 
 
@@ -37,10 +36,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration
+# CORS configuration restricted to configured frontend origins and preview domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.parsed_cors_origins,
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
