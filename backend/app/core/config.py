@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     
     # Configured Frontend Origins for CORS
     CORS_ORIGINS: Union[str, List[str]] = "http://localhost:3000,http://127.0.0.1:3000"
-    CORS_ORIGIN_REGEX: Optional[str] = r"^https:\/\/.*\.run\.app$"
+    CORS_ORIGIN_REGEX: Optional[str] = r"^https:\/\/ais-(dev|pre)-[a-zA-Z0-9]+-[0-9]+\.asia-southeast1\.run\.app$"
 
     @property
     def parsed_cors_origins(self) -> List[str]:

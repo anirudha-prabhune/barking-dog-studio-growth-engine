@@ -4,6 +4,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
+from alembic.config import Config
+from alembic import command
 from backend.app.main import app
 from backend.app.core.database import Base, get_db
 from backend.app.core.config import settings
@@ -40,11 +42,13 @@ engine = init_test_engine()
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 TEST_ADMIN_EMAIL = "admin@barkingdog.studio"
-TEST_ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "TestSecretPassword2026!")
+# Requirement 4: Remove hard-coded test secret/password fallbacks
+TEST_ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD") or settings.ADMIN_PASSWORD
+if not TEST_ADMIN_PASSWORD:
+    raise RuntimeError("ADMIN_PASSWORD environment variable is required to run tests.")
 
-# Ensure SECRET_KEY is set in test environment if empty
 if not settings.SECRET_KEY:
-    settings.SECRET_KEY = "test-secret-key-studio-barking-dog-2026"
+    raise RuntimeError("SECRET_KEY environment variable is required to run tests.")
 
 
 def override_get_db():
@@ -58,9 +62,22 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 
+# Requirement 5: Make tests use Alembic migrations rather than Base.metadata.create_all()
+@pytest.fixture(scope="session", autouse=True)
+def apply_migrations():
+    alembic_cfg = Config("backend/migrations/alembic.ini")
+    alembic_cfg.set_main_option("script_location", "backend/migrations")
+    if "sqlite" in str(engine.url):
+        with engine.begin() as connection:
+            alembic_cfg.attributes["connection"] = connection
+            command.upgrade(alembic_cfg, "head")
+    else:
+        alembic_cfg.set_main_option("sqlalchemy.url", str(engine.url))
+        command.upgrade(alembic_cfg, "head")
+
+
 @pytest.fixture(autouse=True)
 def setup_db():
-    Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     try:
         # Clear tables in reverse dependency order for isolated test execution

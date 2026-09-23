@@ -4,9 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend.app.core.config import settings
-from backend.app.core.database import SessionLocal
 from backend.app.api import auth, companies, dashboard, health
-from backend.app.services.auth_service import AuthService
 from contextlib import asynccontextmanager
 import logging
 
@@ -16,17 +14,10 @@ logger = logging.getLogger("barking_dog")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Verify database connection and initial administrator (Alembic is the sole schema mechanism)
-    try:
-        db = SessionLocal()
-        try:
-            admin = AuthService.ensure_initial_admin(db)
-            logger.info(f"Verified initial admin user: {admin.email}")
-        finally:
-            db.close()
-    except Exception as e:
-        logger.warning(f"Database startup check note: {e}")
+    # Application startup lifecycle (database schema and initial admin are managed via Alembic and backend/seed.py)
+    logger.info("Barking Dog Growth Engine backend started.")
     yield
+    logger.info("Barking Dog Growth Engine backend stopped.")
 
 
 app = FastAPI(

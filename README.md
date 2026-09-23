@@ -20,8 +20,8 @@ The application uses a clean, single canonical architecture:
 Browser
   ↓
 React Frontend (Port 3000, Vite + React Router)
-  ↓ [VITE_API_URL=http://localhost:8000]
-FastAPI Backend (Port 8000, Python 3.11+)
+  ↓ [VITE_API_URL=http://localhost:8001]
+FastAPI Backend (Port 8001, Python 3.11+)
   ↓
 PostgreSQL 16 (pgvector) + Redis 7
 ```
@@ -72,7 +72,7 @@ Configure your environment settings in `.env`:
 - `TEST_DATABASE_URL`: PostgreSQL test connection string (defaults to `postgresql://postgres:postgres@localhost:5432/barking_dog_test`)
 - `REDIS_URL`: Redis connection string (defaults to `redis://localhost:6379/0`)
 - `SECRET_KEY`: Secure secret key for signing JWT tokens (never use hardcoded defaults in production)
-- `VITE_API_URL`: Backend API URL (defaults to `http://localhost:8000`)
+- `VITE_API_URL`: Backend API URL (defaults to `http://localhost:8001`)
 - `CORS_ORIGINS`: Comma-separated allowed frontend origins (defaults to `http://localhost:3000,http://127.0.0.1:3000`)
 - `ADMIN_EMAIL`: Email for initial administrator team member
 - `ADMIN_PASSWORD`: Secure password for initial administrator team member (never commit plain-text credentials)
@@ -109,19 +109,19 @@ Execute the seed script to create the administrator account (configured via `ADM
 python backend/seed.py
 ```
 
-*Note: Database seeding is performed via this development script only and is never exposed as a public API endpoint.*
+*Note: Database seeding is performed via this development script only and is never executed automatically during FastAPI startup.*
 
 ### 6. Start the FastAPI Backend
 
-Run the FastAPI backend on port 8000:
+Run the FastAPI backend on port 8001:
 
 ```bash
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
-- API Base URL: `http://localhost:8000`
-- Interactive OpenAPI Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
-- Health Check: [http://localhost:8000/health](http://localhost:8000/health)
+- API Base URL: `http://localhost:8001`
+- Interactive OpenAPI Documentation: [http://localhost:8001/docs](http://localhost:8001/docs)
+- Health Check: [http://localhost:8001/health](http://localhost:8001/health)
 
 ### 7. Start the Frontend Application
 
