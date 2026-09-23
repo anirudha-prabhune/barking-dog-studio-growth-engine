@@ -9,7 +9,7 @@ interface LoginViewProps {
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('admin@barkingdog.studio');
-  const [password, setPassword] = useState('BarkingDog2026!');
+  const [password, setPassword] = useState('BarkingDog2026!Secure');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -35,7 +35,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
 
   const handleQuickDemoLogin = () => {
     setEmail('admin@barkingdog.studio');
-    setPassword('BarkingDog2026!');
+    setPassword('BarkingDog2026!Secure');
   };
 
   return (
@@ -145,7 +145,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             </div>
             <div className="p-2.5 rounded bg-slate-900/60 border border-slate-700 font-mono text-[10px] text-slate-400 space-y-0.5">
               <div>Email: <span className="text-slate-200">admin@barkingdog.studio</span></div>
-              <div>Password: <span className="text-slate-200">BarkingDog2026!</span></div>
+              <div>Password: <span className="text-slate-200">BarkingDog2026!Secure</span></div>
             </div>
           </div>
         </div>

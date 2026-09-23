@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bash -c 'pgrep -f \"uvicorn backend.app.main:app\" > /dev/null || (nohup .venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8001 > /tmp/uvicorn.log 2>&1 & sleep 1) ; exec vite'",
+    "dev": "bash -c 'if [ ! -f .venv/bin/uvicorn ]; then python3 -m virtualenv .venv && .venv/bin/pip install -r backend/requirements.txt; fi; (PYTHONPATH=. .venv/bin/python3 backend/seed.py >/dev/null 2>&1 || true); pgrep -f \"uvicorn backend.app.main:app\" > /dev/null || (nohup .venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8001 > /tmp/uvicorn.log 2>&1 & sleep 2) ; exec vite'",
     "dev:frontend": "vite",
     "dev:backend": "uvicorn backend.app.main:app --reload --port 8001",
     "build": "vite build",

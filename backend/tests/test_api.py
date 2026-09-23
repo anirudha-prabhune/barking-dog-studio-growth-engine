@@ -1,7 +1,8 @@
 import os
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
 from backend.app.main import app
 from backend.app.core.database import Base, get_db
@@ -14,7 +15,28 @@ TEST_DATABASE_URL = os.getenv(
     os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/barking_dog_test")
 )
 
-engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
+
+def init_test_engine():
+    if TEST_DATABASE_URL.startswith("postgresql"):
+        try:
+            test_eng = create_engine(TEST_DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 1})
+            with test_eng.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            test_eng.dispose()
+            return create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
+        except Exception:
+            # Fallback for environments without running Docker/Postgres daemon
+            return create_engine(
+                "sqlite:///:memory:",
+                connect_args={"check_same_thread": False},
+                poolclass=StaticPool
+            )
+    elif "sqlite" in TEST_DATABASE_URL:
+        return create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    return create_engine(TEST_DATABASE_URL)
+
+
+engine = init_test_engine()
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 TEST_ADMIN_EMAIL = "admin@barkingdog.studio"

@@ -37,6 +37,7 @@ export function clearStoredToken(): void {
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getStoredToken();
   const headers: Record<string, string> = {
+    'Accept': 'application/json',
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> || {})
   };
@@ -52,15 +53,46 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers
   });
 
-  const data = await response.json().catch(() => null);
+  const contentType = response.headers.get('content-type') || '';
+  const isJson = contentType.includes('application/json');
+  let data: any = null;
+
+  if (isJson) {
+    data = await response.json().catch(() => null);
+  }
 
   if (!response.ok) {
-    const errorMsg = data?.error?.message || data?.detail?.error?.message || response.statusText || 'An unexpected error occurred';
-    const errorCode = data?.error?.code || 'REQUEST_FAILED';
+    let errorMsg = 'An unexpected server error occurred';
+    let errorCode = `HTTP_${response.status}`;
+
+    if (data && typeof data === 'object') {
+      if (typeof data.error === 'object' && data.error?.message) {
+        errorMsg = data.error.message;
+        errorCode = data.error.code || errorCode;
+      } else if (typeof data.detail === 'object' && data.detail?.error?.message) {
+        errorMsg = data.detail.error.message;
+        errorCode = data.detail.error.code || errorCode;
+      } else if (typeof data.detail === 'string') {
+        errorMsg = data.detail;
+      } else if (typeof data.message === 'string') {
+        errorMsg = data.message;
+      }
+    } else {
+      errorMsg = response.statusText || `Request failed with status ${response.status}`;
+    }
+
     const error = new Error(errorMsg);
     (error as any).code = errorCode;
     (error as any).status = response.status;
     throw error;
+  }
+
+  if (response.status === 204) {
+    return {} as T;
+  }
+
+  if (data === null) {
+    throw new Error('Received unexpected non-JSON response from server. Please verify backend service.');
   }
 
   return data as T;
@@ -73,6 +105,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password })
     });
+    if (!res || !res.access_token) {
+      throw new Error('Authentication response is missing access token.');
+    }
     setStoredToken(res.access_token);
     return res;
   },
