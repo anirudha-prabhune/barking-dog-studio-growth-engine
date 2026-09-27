@@ -69,6 +69,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       if (typeof data.error === 'object' && data.error?.message) {
         errorMsg = data.error.message;
         errorCode = data.error.code || errorCode;
+      } else if (typeof data.error === 'string') {
+        errorMsg = data.error;
       } else if (typeof data.detail === 'object' && data.detail?.error?.message) {
         errorMsg = data.detail.error.message;
         errorCode = data.detail.error.code || errorCode;

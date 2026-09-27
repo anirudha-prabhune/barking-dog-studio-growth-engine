@@ -20,10 +20,10 @@ The application uses a clean, single canonical architecture:
 Browser
   ↓
 React Frontend (Port 3000, Vite + React Router)
-  ↓ [VITE_API_URL=http://localhost:8001]
-FastAPI Backend (Port 8001, Python 3.11+)
+  ↓ [VITE_API_URL=http://localhost:8000]
+FastAPI Backend (Port 8000, Python 3.11+)
   ↓
-PostgreSQL 16 (pgvector) + Redis 7
+PostgreSQL 16 (pgvector, Port 5432) + Redis 7 (Port 6379)
 ```
 
 - **Frontend**: React 19, React Router 7, TypeScript, Tailwind CSS, Lucide Icons, Motion.
@@ -72,7 +72,7 @@ Configure your environment settings in `.env`:
 - `TEST_DATABASE_URL`: PostgreSQL test connection string (defaults to `postgresql://postgres:postgres@localhost:5432/barking_dog_test`)
 - `REDIS_URL`: Redis connection string (defaults to `redis://localhost:6379/0`)
 - `SECRET_KEY`: Secure secret key for signing JWT tokens (never use hardcoded defaults in production)
-- `VITE_API_URL`: Backend API URL (defaults to `http://localhost:8001`)
+- `VITE_API_URL`: Backend API URL (defaults to `http://localhost:8000`)
 - `CORS_ORIGINS`: Comma-separated allowed frontend origins (defaults to `http://localhost:3000,http://127.0.0.1:3000`)
 - `ADMIN_EMAIL`: Email for initial administrator team member
 - `ADMIN_PASSWORD`: Secure password for initial administrator team member (never commit plain-text credentials)
@@ -109,19 +109,19 @@ Execute the seed script to create the administrator account (configured via `ADM
 python backend/seed.py
 ```
 
-*Note: Database seeding is performed via this development script only and is never executed automatically during FastAPI startup.*
+*Note: Database seeding is performed via this explicit development script only and is never executed automatically during FastAPI startup or frontend build.*
 
 ### 6. Start the FastAPI Backend
 
-Run the FastAPI backend on port 8001:
+Run the FastAPI backend on port 8000:
 
 ```bash
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8001 --reload
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-- API Base URL: `http://localhost:8001`
-- Interactive OpenAPI Documentation: [http://localhost:8001/docs](http://localhost:8001/docs)
-- Health Check: [http://localhost:8001/health](http://localhost:8001/health)
+- API Base URL: `http://localhost:8000`
+- Interactive OpenAPI Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Health Check: [http://localhost:8000/health](http://localhost:8000/health)
 
 ### 7. Start the Frontend Application
 
@@ -131,6 +131,8 @@ In a separate terminal, install npm dependencies and start the Vite frontend on 
 npm install
 npm run dev
 ```
+
+*Note: `npm run dev` starts the Vite dev server and does NOT seed the database.*
 
 Open your browser at:
 **[http://localhost:3000](http://localhost:3000)**
@@ -144,7 +146,7 @@ Log in using the administrator email and password configured in your `.env` file
 Run the automated backend test suite (utilizing pytest and PostgreSQL isolated test database):
 
 ```bash
-PYTHONPATH=. pytest backend/tests/ -v
+TEST_ADMIN_PASSWORD="YourTestPassword123!" TEST_SECRET_KEY="your-test-secret-key-32-chars-long" PYTHONPATH=. pytest backend/tests/ -v
 ```
 
 All tests execute against the dedicated PostgreSQL test database (`barking_dog_test`), validating authentication, company lifecycle, soft-delete archival/restore, audit logging, and idempotent admin credentials bootstrap without overwriting existing passwords.

@@ -1,54 +1,38 @@
 import os
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
-from sqlalchemy.pool import StaticPool
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from alembic.config import Config
-from alembic import command
 from backend.app.main import app
 from backend.app.core.database import Base, get_db
 from backend.app.core.config import settings
 from backend.app.services.auth_service import AuthService
 
-# PostgreSQL test database (Requirement 7: Move tests from SQLite -> PostgreSQL)
+# PostgreSQL test database (Requirement 5: Keep TEST_DATABASE_URL and PostgreSQL)
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/barking_dog_test")
+    "postgresql://postgres:postgres@localhost:5432/barking_dog_test"
 )
 
-
-def init_test_engine():
-    if TEST_DATABASE_URL.startswith("postgresql"):
-        try:
-            test_eng = create_engine(TEST_DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 1})
-            with test_eng.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            test_eng.dispose()
-            return create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
-        except Exception:
-            # Fallback for environments without running Docker/Postgres daemon
-            return create_engine(
-                "sqlite:///:memory:",
-                connect_args={"check_same_thread": False},
-                poolclass=StaticPool
-            )
-    elif "sqlite" in TEST_DATABASE_URL:
-        return create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    return create_engine(TEST_DATABASE_URL)
-
-
-engine = init_test_engine()
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
+# Test environment variables (Requirement 4: Remove hard-coded test secrets)
 TEST_ADMIN_EMAIL = "admin@barkingdog.studio"
-# Requirement 4: Remove hard-coded test secret/password fallbacks
-TEST_ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD") or settings.ADMIN_PASSWORD
+TEST_ADMIN_PASSWORD = os.getenv("TEST_ADMIN_PASSWORD")
 if not TEST_ADMIN_PASSWORD:
-    raise RuntimeError("ADMIN_PASSWORD environment variable is required to run tests.")
+    raise RuntimeError(
+        "TEST_ADMIN_PASSWORD environment variable is required to run tests. Do not use hard-coded secrets."
+    )
 
-if not settings.SECRET_KEY:
-    raise RuntimeError("SECRET_KEY environment variable is required to run tests.")
+TEST_SECRET_KEY = os.getenv("TEST_SECRET_KEY")
+if not TEST_SECRET_KEY:
+    raise RuntimeError(
+        "TEST_SECRET_KEY environment variable is required to run tests. Do not use hard-coded secrets."
+    )
+
+# Use TEST_SECRET_KEY for test session signing
+settings.SECRET_KEY = TEST_SECRET_KEY
+
+engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def override_get_db():
@@ -62,22 +46,9 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 
-# Requirement 5: Make tests use Alembic migrations rather than Base.metadata.create_all()
-@pytest.fixture(scope="session", autouse=True)
-def apply_migrations():
-    alembic_cfg = Config("backend/migrations/alembic.ini")
-    alembic_cfg.set_main_option("script_location", "backend/migrations")
-    if "sqlite" in str(engine.url):
-        with engine.begin() as connection:
-            alembic_cfg.attributes["connection"] = connection
-            command.upgrade(alembic_cfg, "head")
-    else:
-        alembic_cfg.set_main_option("sqlalchemy.url", str(engine.url))
-        command.upgrade(alembic_cfg, "head")
-
-
 @pytest.fixture(autouse=True)
 def setup_db():
+    Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     try:
         # Clear tables in reverse dependency order for isolated test execution
