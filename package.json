@@ -4,8 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:backend": "uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload",
+    "dev": "node dev-runner.cjs",
+    "dev:frontend": "vite",
+    "dev:backend": "/.venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8001 --reload",
     "build": "vite build",
     "lint": "tsc --noEmit"
   },

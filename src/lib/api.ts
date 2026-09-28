@@ -94,6 +94,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   if (data === null) {
+    if (contentType.includes('text/html')) {
+      throw new Error('Backend service is initializing. Please wait a few seconds and try again.');
+    }
     throw new Error('Received unexpected non-JSON response from server. Please verify backend service.');
   }
 

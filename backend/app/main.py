@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend.app.core.config import settings
+from backend.app.core.database import init_db
 from backend.app.api import auth, companies, dashboard, health
 from contextlib import asynccontextmanager
 import logging
@@ -14,7 +15,11 @@ logger = logging.getLogger("barking_dog")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Application startup lifecycle (database schema and initial admin are managed via Alembic and backend/seed.py)
+    # Application startup lifecycle: initialize schema and admin account
+    try:
+        init_db()
+    except Exception as exc:
+        logger.error(f"Error during database initialization: {exc}")
     logger.info("Barking Dog Growth Engine backend started.")
     yield
     logger.info("Barking Dog Growth Engine backend stopped.")
