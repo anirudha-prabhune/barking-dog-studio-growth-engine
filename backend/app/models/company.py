@@ -53,3 +53,4 @@ class Company(Base):
 
     activities = relationship("Activity", back_populates="company", cascade="all, delete-orphan", order_by="desc(Activity.created_at)")
     evidence_items = relationship("Evidence", back_populates="company", cascade="all, delete-orphan")
+    website_scans = relationship("WebsiteScan", back_populates="company", cascade="all, delete-orphan", order_by="desc(WebsiteScan.created_at)")

@@ -114,6 +114,20 @@ class CompanyUpdate(BaseModel):
         return None
 
 
+class EvidenceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    company_id: str
+    type: str
+    statement: str
+    source_name: str
+    source_url: Optional[str] = None
+    confidence: Optional[float] = None
+    captured_at: datetime
+    created_at: datetime
+
+
 class CompanyOut(CompanyBase):
     model_config = ConfigDict(from_attributes=True)
 
@@ -122,6 +136,7 @@ class CompanyOut(CompanyBase):
     created_at: datetime
     updated_at: datetime
     activities: Optional[List[ActivityOut]] = []
+    evidence_items: Optional[List[EvidenceOut]] = []
 
 
 class PaginatedCompanies(BaseModel):

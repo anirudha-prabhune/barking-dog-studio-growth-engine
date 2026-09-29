@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend.app.core.config import settings
 from backend.app.core.database import init_db
-from backend.app.api import auth, companies, dashboard, health
+from backend.app.api import auth, companies, dashboard, health, website_scans
 from contextlib import asynccontextmanager
 import logging
 
@@ -89,3 +89,4 @@ app.include_router(health.router, prefix=settings.API_V1_STR)
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(companies.router, prefix=settings.API_V1_STR)
 app.include_router(dashboard.router, prefix=settings.API_V1_STR)
+app.include_router(website_scans.router, prefix=settings.API_V1_STR)

@@ -81,6 +81,8 @@ def init_db():
     from backend.app.models.activity import Activity
     from backend.app.models.agent_run import AgentRun
     from backend.app.models.evidence import Evidence
+    from backend.app.models.website_scan import WebsiteScan
+    from backend.app.models.website_page import WebsitePage
 
     # Create tables if they do not exist
     Base.metadata.create_all(bind=engine)

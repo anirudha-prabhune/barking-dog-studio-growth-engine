@@ -1,4 +1,14 @@
-import { Company, PaginatedCompanies, DashboardStats, CompanyFormData, User } from '../types';
+import {
+  Company,
+  PaginatedCompanies,
+  DashboardStats,
+  CompanyFormData,
+  User,
+  WebsiteScan,
+  PaginatedWebsiteScans,
+  WebsitePage,
+  PaginatedWebsitePages
+} from '../types';
 
 const TOKEN_KEY = 'bdge_auth_token';
 
@@ -188,5 +198,35 @@ export const api = {
 
   async unarchiveCompany(id: string): Promise<Company> {
     return this.restoreCompany(id);
+  },
+
+  // Website Intelligence (Pass 2A)
+  async triggerWebsiteScan(companyId: string, customUrl?: string): Promise<WebsiteScan> {
+    return request<WebsiteScan>(`/api/companies/${companyId}/scans`, {
+      method: 'POST',
+      body: JSON.stringify({ url: customUrl || null })
+    });
+  },
+
+  async getCompanyScans(companyId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedWebsiteScans> {
+    return request<PaginatedWebsiteScans>(`/api/companies/${companyId}/scans?page=${page}&page_size=${pageSize}`);
+  },
+
+  async getScanDetails(scanId: string): Promise<WebsiteScan> {
+    return request<WebsiteScan>(`/api/scans/${scanId}`);
+  },
+
+  async getScanPages(scanId: string, page: number = 1, pageSize: number = 25): Promise<PaginatedWebsitePages> {
+    return request<PaginatedWebsitePages>(`/api/scans/${scanId}/pages?page=${page}&page_size=${pageSize}`);
+  },
+
+  async getScanPageDetail(scanId: string, pageId: string): Promise<WebsitePage> {
+    return request<WebsitePage>(`/api/scans/${scanId}/pages/${pageId}`);
+  },
+
+  async cancelScan(scanId: string): Promise<WebsiteScan> {
+    return request<WebsiteScan>(`/api/scans/${scanId}/cancel`, {
+      method: 'POST'
+    });
   }
 };

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Company, CompanyStatus, OpportunityLevel, Activity } from '../types';
 import { api } from '../lib/api';
+import { WebsiteIntelligenceSection } from './WebsiteIntelligenceSection';
 
 interface CompanyDetailViewProps {
   companyId: string;
@@ -366,6 +367,61 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Evidence Trail Card (Pass 2A) */}
+            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-600" />
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    Verified Intelligence Evidence Trail
+                  </h2>
+                </div>
+                <span className="text-xs font-mono text-slate-500">
+                  {company.evidence_items?.length || 0} Observations
+                </span>
+              </div>
+
+              {company.evidence_items && company.evidence_items.length > 0 ? (
+                <div className="space-y-3">
+                  {company.evidence_items.map((ev) => (
+                    <div
+                      key={ev.id}
+                      className="p-3 bg-slate-50 rounded-md border border-slate-200 text-xs space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[10px] uppercase font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                          {ev.type.replace('_', ' ')}
+                        </span>
+                        <span className="font-mono text-[10px] text-slate-400">
+                          {formatDate(ev.captured_at)}
+                        </span>
+                      </div>
+                      <p className="text-slate-800 font-medium leading-relaxed">
+                        {ev.statement}
+                      </p>
+                      {ev.source_url && (
+                        <div className="pt-1 flex items-center space-x-1 text-[11px] text-slate-500 truncate font-mono">
+                          <span className="text-slate-400">Source:</span>
+                          <a
+                            href={ev.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-amber-700 hover:underline truncate"
+                          >
+                            {ev.source_url}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-xs text-slate-400 italic">
+                  No evidence recorded yet. Run a website intelligence scan in the Intelligence tab to generate deterministic evidence.
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right Rail Info */}
@@ -432,103 +488,14 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         </div>
       )}
 
-      {/* Tab 2: Intelligence Tab (Section 14: Placeholder only! No fake intelligence) */}
+      {/* Tab 2: Intelligence Tab (Pass 2A Active Deterministic Website Intelligence) */}
       {activeTab === 'intelligence' && (
-        <div id="tab-content-intelligence" className="space-y-6">
-          <div className="bg-amber-50/70 border border-amber-200/80 p-5 rounded-lg flex items-start space-x-3 text-amber-900">
-            <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-xs uppercase tracking-wider">
-                Intelligence not yet available.
-              </h3>
-              <p className="text-xs text-amber-800/90 mt-1">
-                Per Pass 1 specifications, automated lead intelligence, crawling, signals detection, and AI opportunity scoring will be introduced in subsequent passes (Pass 2: Website Intelligence, Pass 3: Signals & Research Agents).
-              </p>
-            </div>
-          </div>
-
-          {/* Disabled Placeholder Cards as mandated by Section 14 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* Website Audit */}
-            <div className="bg-slate-50/70 border border-slate-200 p-5 rounded-lg opacity-60 cursor-not-allowed">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded bg-slate-200/70 text-slate-500">
-                  <FileSearch className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono uppercase bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-semibold">
-                  Pass 2 Agent
-                </span>
-              </div>
-              <h4 className="text-xs font-semibold text-slate-700">Website Audit</h4>
-              <p className="text-[11px] text-slate-500 mt-1 leading-normal">
-                Crawls digital storefront to assess technology stack, CMS detection, Core Web Vitals, and conversion architecture.
-              </p>
-            </div>
-
-            {/* Business Signals */}
-            <div className="bg-slate-50/70 border border-slate-200 p-5 rounded-lg opacity-60 cursor-not-allowed">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded bg-slate-200/70 text-slate-500">
-                  <Radio className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono uppercase bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-semibold">
-                  Pass 3 Agent
-                </span>
-              </div>
-              <h4 className="text-xs font-semibold text-slate-700">Business Signals</h4>
-              <p className="text-[11px] text-slate-500 mt-1 leading-normal">
-                Detects commercial expansion, leadership hires, brand redesign triggers, and capital expenditure indicators.
-              </p>
-            </div>
-
-            {/* Research Report */}
-            <div className="bg-slate-50/70 border border-slate-200 p-5 rounded-lg opacity-60 cursor-not-allowed">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded bg-slate-200/70 text-slate-500">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono uppercase bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-semibold">
-                  Pass 3 Agent
-                </span>
-              </div>
-              <h4 className="text-xs font-semibold text-slate-700">Deep Business Research</h4>
-              <p className="text-[11px] text-slate-500 mt-1 leading-normal">
-                Analyzes strategic positioning, competitive weaknesses, and digital services readiness.
-              </p>
-            </div>
-
-            {/* Opportunity Assessment */}
-            <div className="bg-slate-50/70 border border-slate-200 p-5 rounded-lg opacity-60 cursor-not-allowed">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded bg-slate-200/70 text-slate-500">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono uppercase bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-semibold">
-                  Pass 3 Agent
-                </span>
-              </div>
-              <h4 className="text-xs font-semibold text-slate-700">Opportunity Assessment</h4>
-              <p className="text-[11px] text-slate-500 mt-1 leading-normal">
-                Calculates digital service opportunity score and matches Studio Barking Dog case studies to target pain points.
-              </p>
-            </div>
-
-            {/* Key Contacts */}
-            <div className="bg-slate-50/70 border border-slate-200 p-5 rounded-lg opacity-60 cursor-not-allowed">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded bg-slate-200/70 text-slate-500">
-                  <Users className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono uppercase bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-semibold">
-                  Pass 4 Agent
-                </span>
-              </div>
-              <h4 className="text-xs font-semibold text-slate-700">Key Contacts & Decision Makers</h4>
-              <p className="text-[11px] text-slate-500 mt-1 leading-normal">
-                Identifies Heads of Marketing, Chief Technology Officers, and Founders for personalized outreach.
-              </p>
-            </div>
-          </div>
+        <div id="tab-content-intelligence">
+          <WebsiteIntelligenceSection
+            companyId={company.id}
+            websiteUrl={company.website_url}
+            onRefreshCompany={fetchCompany}
+          />
         </div>
       )}
 

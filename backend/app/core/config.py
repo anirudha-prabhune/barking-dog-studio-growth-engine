@@ -27,6 +27,18 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@barkingdog.studio"
     ADMIN_PASSWORD: Optional[str] = None
     
+    # Pass 2A Website Intelligence Crawler Settings
+    CRAWLER_USER_AGENT: str = "BarkingDogGrowthEngine/1.0 (+https://barkingdog.studio/bot)"
+    CRAWLER_MAX_PAGES_PER_SCAN: int = 25
+    CRAWLER_MAX_CRAWL_DEPTH: int = 2
+    CRAWLER_MAX_REDIRECTS: int = 5
+    CRAWLER_REQUEST_TIMEOUT_SECONDS: int = 15
+    CRAWLER_MAX_RESPONSE_BYTES: int = 5 * 1024 * 1024  # 5 MB
+    CRAWLER_MAX_HTML_STORAGE_BYTES: int = 1 * 1024 * 1024  # 1 MB
+    CRAWLER_MAX_TEXT_STORAGE_BYTES: int = 500 * 1024  # 500 KB
+    CRAWLER_MAX_SITEMAPS: int = 5
+    CRAWLER_MAX_SITEMAP_URLS: int = 100
+
     # Configured Frontend Origins for CORS
     CORS_ORIGINS: Union[str, List[str]] = "http://localhost:3000,http://127.0.0.1:3000"
     CORS_ORIGIN_REGEX: Optional[str] = r"^https:\/\/ais-(dev|pre)-[a-zA-Z0-9]+-[0-9]+\.asia-southeast1\.run\.app$"
